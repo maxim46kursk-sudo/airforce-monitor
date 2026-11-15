@@ -28,9 +28,68 @@ main{height:100dvh;overflow:hidden;max-width:none;padding:6px 14px}.top{padding-
 .dashboard{position:static;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);grid-template-rows:30px minmax(0,1fr) auto;column-gap:18px;row-gap:0;margin:0}.dash-head{grid-column:1/-1;grid-row:1;padding:4px 0}.chart-panel{grid-column:1;grid-row:2;min-height:0;padding:0;border-bottom:0!important}.chart-summary strong{font-size:17px}.chart-summary>span{font-size:9px}.live-chart{margin:0}.live-chart svg{height:clamp(78px,25vh,160px)}.quick-metrics{grid-column:2;grid-row:2;display:grid;grid-template-columns:1fr 1fr;gap:0;align-content:stretch;border-bottom:0}.tile{padding:5px 4px 5px 0}.tile strong{font-size:clamp(20px,6vh,31px)}.tile-title{font-size:9px}.tile:not(:last-child):after{display:none}.projection{grid-column:1/-1;grid-row:3;display:flex;align-items:center;gap:18px;padding:5px 0 0;border-top:1px solid #263949;border-bottom:0!important}.projection-top{gap:10px}.projection-top small{display:none}.projection-value{margin:0;gap:10px}.projection-value strong{font-size:20px}.projection-value span{font-size:9px}.progress-track{flex:1;height:5px}.progress-label{display:none}.panel,.foot{display:none}
 }
 @media(orientation:landscape) and (max-height:390px){.hero{top:auto;height:auto}.dashboard{top:auto}.hero strong{font-size:40px}.live-chart svg{height:clamp(62px,20vh,100px)}.projection{padding:2px 0}.chart-summary strong{font-size:16px}}
+
+/* v7.4 clean responsive layout — deliberately override all previous positional rules */
+html,body{width:100%;max-width:100%;overflow-x:hidden}
+body{background:#080f19}
+main{position:relative;width:100%;max-width:980px;margin:0 auto;padding:12px 16px 30px;height:auto;overflow:visible}
+.top{position:relative;display:flex;align-items:center;justify-content:space-between;padding:0;margin:0 0 7px;min-height:38px}
+.top>div{min-width:0}.brand{font-size:13px;white-space:nowrap}.sub{font-size:9px}
+.gear{position:static;flex:0 0 38px;width:38px;height:38px;min-width:38px;padding:0;margin:0;border-radius:9px}
+.connect-state{margin:4px 0 9px;min-width:0;flex-wrap:wrap}
+.primary-action{position:static;display:block;width:100%;margin:0 0 7px;padding:12px 16px;font-size:14px;border-radius:10px}
+#status{display:block!important;margin:0 0 6px!important;font-size:10px!important;min-height:12px}
+.hero{position:static!important;inset:auto!important;display:flex!important;flex-wrap:wrap;align-items:baseline;justify-content:flex-start;gap:7px 12px;width:100%!important;height:auto!important;min-height:0!important;padding:12px 0 14px!important;margin:0!important;text-align:left!important;border:0!important;border-bottom:1px solid #263949!important;border-radius:0!important;background:none!important}
+.hero .tag{width:100%;font-size:10px}
+.hero strong{display:block;font-size:clamp(43px,12vw,67px)!important;letter-spacing:-2px;line-height:1.1;min-width:0}
+.hero .unit{font-size:13px}
+.hero small{width:100%;flex-basis:100%;font-size:10px;line-height:1.4}
+.dashboard{position:static!important;inset:auto!important;display:flex!important;flex-direction:column;gap:0;width:100%;margin:0!important;padding:0!important}
+.dash-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 0 6px;min-width:0}
+.dash-head .tag{font-size:10px;letter-spacing:.6px}
+.switches{display:flex;gap:2px;flex:0 0 auto}.switches button{font-size:11px;padding:7px 9px}
+.chart-panel{display:block!important;position:static!important;grid-area:auto!important;width:100%;padding:0 0 10px!important;margin:0!important;border:0!important;border-bottom:1px solid #263949!important}
+.chart-summary{display:flex;justify-content:space-between;align-items:center;gap:10px;min-width:0}
+.chart-summary>div{display:flex;align-items:baseline;gap:10px;min-width:0}
+.chart-summary strong{font-size:21px;white-space:nowrap}
+.chart-summary>span{font-size:10px;white-space:nowrap}
+.live-chart{margin-top:6px}.live-chart svg{display:block;width:100%;height:clamp(100px,19vh,155px)}
+.quick-metrics{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:0!important;width:100%;border-bottom:1px solid #263949!important}
+.tile{display:flex!important;flex-direction:column;align-items:flex-start;position:relative;min-width:0;width:100%;padding:12px 10px 12px 0!important;margin:0;background:none!important;border:0!important;border-radius:0!important;overflow:hidden}
+.tile:nth-child(odd){border-right:1px solid #263949!important}.tile:nth-child(even){padding-left:13px!important}
+.tile:nth-child(-n+2){border-bottom:1px solid #263949!important}
+.tile:after{display:none!important}
+.tile-title{display:block;font-size:10px;line-height:1.3;letter-spacing:0;white-space:normal;overflow-wrap:break-word}
+.tile strong{display:block;font-size:clamp(23px,6vw,32px)!important;line-height:1.2;margin-top:5px;white-space:nowrap}
+.tile-foot{display:none!important}
+.projection{position:static!important;display:block!important;width:100%;padding:12px 0!important;margin:0!important;border:0!important;border-bottom:1px solid #263949!important}
+.projection-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.projection-top>div:first-child{min-width:0}.projection-top small{font-size:10px}
+.projection-value{margin:9px 0;display:flex;gap:12px;align-items:baseline}.projection-value strong{font-size:28px}
+.panel{display:block;margin-top:12px}.foot{display:block}
+#settings{z-index:20;padding:16px;overflow-y:auto}
+@media(orientation:landscape) and (max-height:650px){
+main{height:100dvh;max-width:none;overflow:hidden;padding:5px 12px 7px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);grid-template-rows:auto auto minmax(0,1fr);column-gap:16px}
+.top{grid-column:1/-1;grid-row:1;margin:0;min-height:30px}.gear{width:30px;height:30px;min-width:30px;flex-basis:30px;font-size:17px}
+.connect-state{grid-column:1;grid-row:2;margin:0 0 3px;font-size:10px;align-self:center}
+.primary-action{position:absolute;top:5px;right:56px;width:auto;font-size:11px;padding:7px 12px;margin:0;z-index:1}
+#status{display:none!important}
+.hero{grid-column:1;grid-row:3;align-self:stretch;align-content:center;gap:8px!important;border:0!important;border-right:1px solid #263949!important;padding:4px 12px 4px 0!important}
+.hero .tag{font-size:10px}.hero strong{font-size:clamp(47px,12vh,78px)!important}.hero small{font-size:10px}
+.dashboard{grid-column:2;grid-row:2/4;min-height:0;display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,.7fr);grid-template-rows:30px minmax(0,1fr);gap:0 12px;overflow:hidden}
+.dash-head{grid-column:1/-1;grid-row:1;padding:0 0 4px}
+.chart-panel{grid-column:1;grid-row:2;min-height:0;overflow:hidden;border:0!important;padding:0!important}
+.chart-summary>span{display:none}.chart-summary strong{font-size:17px}
+.live-chart svg{height:clamp(70px,32vh,180px)}
+.quick-metrics{grid-column:2;grid-row:2;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;align-content:stretch;border:0!important;overflow:hidden}
+.tile{padding:5px 4px 4px 0!important}.tile:nth-child(even){padding-left:7px!important}
+.tile-title{font-size:9px}.tile strong{font-size:clamp(17px,5.5vh,28px)!important;margin-top:2px}
+.projection,.panel,.foot{display:none!important}
+#settings .panel{display:block!important}
+}
 </style></head>
 <body><main>
-<header class="top"><div><div class="brand">AIR FORCE <span style="color:#b8ee43">MONITOR</span></div><div class="sub">ROWING PERFORMANCE · v7.3</div></div><button id="settingsOpen" class="gear" aria-label="Настройки">⚙</button></header>
+<header class="top"><div><div class="brand">AIR FORCE <span style="color:#b8ee43">MONITOR</span></div><div class="sub">ROWING PERFORMANCE · v7.4</div></div><button id="settingsOpen" class="gear" aria-label="Настройки">⚙</button></header>
 <div class="connect-state"><span id="rowDot" class="dot"></span><span id="rowState">Гребля не подключена</span><span style="margin-left:auto" id="hrState">♥ —</span></div>
 <button id="start" class="primary-action" disabled>Начать тренировку</button>
 <div id="status" style="margin:-8px 0 14px">Ожидание подключения</div>
@@ -39,7 +98,7 @@ main{height:100dvh;overflow:hidden;max-width:none;padding:6px 14px}.top{padding-
 <div class="dash-head"><div><div class="tag">ДИНАМИКА ТРЕНИРОВКИ</div></div><div class="switches" id="chartSwitch"><button type="button" data-chart="pace" class="selected">Темп</button><button type="button" data-chart="power">Вт</button><button type="button" data-chart="heart">Пульс</button></div></div>
 <div class="chart-panel"><div class="chart-summary"><div><span id="chartLabel">Темп /500 м</span><strong id="chartValue">—:—</strong></div><span id="chartHint">−3 мин → сейчас</span></div><div class="live-chart"><div class="axis-label" id="axisTop"></div><svg viewBox="0 0 400 130" preserveAspectRatio="none" aria-label="История показателей"><line x1="0" y1="30" x2="400" y2="30" class="graph-grid"/><line x1="0" y1="65" x2="400" y2="65" class="graph-grid"/><line x1="0" y1="100" x2="400" y2="100" class="graph-grid"/><polygon id="trendArea" points="" class="grapharea"/><polyline id="trendLine" points="" class="graphline"/></svg><div class="chart-bottom"><span>−3 мин</span><span id="axisBottom">Ожидание данных</span><span>Сейчас</span></div></div></div>
 <div class="quick-metrics">
-<button class="tile" id="tileA" type="button"><span class="tile-title" id="tileATitle">Средний темп</span><strong id="tileAValue">—:—</strong><span class="tile-foot">↻</span></button>
+<button class="tile" id="tileA" type="button"><span class="tile-title" id="tileATitle">Средний темп</span><strong id="tileAValue">—:—</strong></button>
 <button class="tile" id="tileB" type="button"><span class="tile-title" id="tileBTitle">Мощность</span><strong id="tileBValue">— Вт</strong><span class="tile-foot">Нажми для переключения ↻</span></button>
 <button class="tile" id="tileC" type="button"><span class="tile-title" id="tileCTitle">Дистанция</span><strong id="tileCValue">— м</strong><span class="tile-foot">Нажми для переключения ↻</span></button>
 <button class="tile" id="tileD" type="button"><span class="tile-title" id="tileDTitle">Пульс</span><strong id="tileDValue">—</strong><span class="tile-foot">Нажми для переключения ↻</span></button></div>

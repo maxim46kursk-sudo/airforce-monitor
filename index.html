@@ -50,8 +50,8 @@ function resetSamples(){distanceHistory=[];strokePower=[];strokeCount=null;lastP
 
 let trainingArmed=false,trainingStartAt=0,trainingElapsedMs=0,graphWindowSeconds=0,lastStrokeAt=0,lastSeenStroke=null;
 function startOnFirstStroke(count){if(!trainingArmed||trainingStartAt||count===null)return;trainingStartAt=Date.now();trainingElapsedMs=0;lastStrokeAt=trainingStartAt;trackHistory=[];lastTrackSample=0;beginRecord();$('sessionClock').classList.add('active');$('screenStatus').textContent='Запись тренировки';log('Старт по первому гребку, счётчик='+count)}
-function stopLive(){for(const k of ['pace','power','spm'])latest[k]=0;latest.pace=null;latest.power=0;latest.spm=0;renderTrackHistory();$('screenStatus').textContent='Пауза · нет гребков'}
-function updateClock(){if(trainingStartAt){trainingElapsedMs=Date.now()-trainingStartAt;$('sessionClock').textContent=fmt(Math.floor(trainingElapsedMs/1000));if(lastStrokeAt&&Date.now()-lastStrokeAt>3500&&(latest.pace!==null||latest.power!==0))stopLive()}else{$('sessionClock').textContent='00:00'}renderTimeMarks()}
+function stopLive(){latest.pace=null;latest.power=0;latest.spm=0;latest.avg=null;const now=Date.now();trackHistory.push({t:now,...latest,pace:0,avg:0});lastTrackSample=now;renderTrackHistory();$('screenStatus').textContent='Пауза · нет гребков'}
+function updateClock(){if(trainingStartAt){trainingElapsedMs=Date.now()-trainingStartAt;$('sessionClock').textContent=fmt(Math.floor(trainingElapsedMs/1000));if(lastStrokeAt&&Date.now()-lastStrokeAt>3500&&(latest.pace!==null||latest.power!==0||latest.avg!==null))stopLive()}else{$('sessionClock').textContent='00:00'}renderTimeMarks()}
 function renderTimeMarks(){const el=$('timeMarks');if(!el)return;const elapsed=trainingStartAt?Math.max(0,(Date.now()-trainingStartAt)/1000):0;const span=graphWindowSeconds||Math.max(60,Math.ceil(elapsed/60)*60);const start=graphWindowSeconds?Math.max(0,elapsed-span):0;const marks=[];for(let i=0;i<=4;i++){const sec=start+span*i/4;marks.push('<span>'+fmt(Math.floor(sec))+'</span>')}el.innerHTML=marks.join('')}
 $('windowOpen').onclick=()=>{$('windowMenu').classList.toggle('hide')};
 document.querySelectorAll('[data-window]').forEach(b=>b.onclick=()=>{graphWindowSeconds=Number(b.dataset.window);$('windowMenu').classList.add('hide');renderTrackHistory();renderTimeMarks()});
@@ -105,7 +105,7 @@ function data(d){try{
  if(lastDistance!==null&&lastElapsed!==null){
   if(prevElapsed!==null&&(lastElapsed<prevElapsed||lastDistance<prevDistance))distanceHistory=[];
   prevElapsed=lastElapsed;prevDistance=lastDistance;
-  if(lastDistance>0&&lastElapsed>0){const avg=lastElapsed*500/lastDistance;if(avg>=45&&avg<=1800){recordTrend('avg',avg);$('avg').textContent=fmt(avg)}else $('avg').textContent='—:—'}
+  if(lastDistance>0&&lastElapsed>0){const avg=lastElapsed*500/lastDistance;if(avg>=45&&avg<=1800){if(lastStrokeAt&&Date.now()-lastStrokeAt<3500)recordTrend('avg',avg);$('avg').textContent=fmt(avg)}else $('avg').textContent='—:—'}
   const last=distanceHistory[distanceHistory.length-1];if(!last||last.t!==lastElapsed||last.m!==lastDistance)distanceHistory.push({t:lastElapsed,m:lastDistance});distanceHistory=distanceHistory.filter(x=>lastElapsed-x.t<=38);const anchor=distanceHistory.find(x=>lastElapsed-x.t>=27);if(anchor&&lastDistance>anchor.m&&lastElapsed>anchor.t){const pace=(lastElapsed-anchor.t)*500/(lastDistance-anchor.m);$('powerPace').textContent=pace>=45&&pace<=1800?fmt(pace):'—:—'}else $('powerPace').textContent='—:—';
   if(lastStrokeAt&&Date.now()-lastStrokeAt>3500){$('pace').textContent='—:—';$('speed').textContent='— км/ч';$('watts').textContent='0 Вт';$('powerLive').textContent='0 Вт';$('powerFill').style.width='0%';stopLive();$('source').textContent='Остановка · темп появится после новых гребков';strokePower=[];lastPower=null;lastMovingAt=0}
  }

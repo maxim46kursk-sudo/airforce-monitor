@@ -71,6 +71,7 @@ async function releaseWakeLock(){if(wakeLock){const lock=wakeLock;wakeLock=null;
 $('wakeEnable').onclick=()=>requestWakeLock();
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&(trainingArmed||trainingStartAt))requestWakeLock()});
 
+let workoutPlan={mode:'free',target:0,completed:false};
 const TRACKS=[
  {key:'pace',label:'Текущий темп',unit:'/500 м',color:'#b9ef53',type:'pace'},
  {key:'power',label:'Мощность',unit:'Вт',color:'#54c8ff',type:'power'},
@@ -141,7 +142,7 @@ async function connectRow(dev){let stage='GATT соединение';try{rowDevi
 $('start').onclick=startWorkout;$('stop').onclick=async()=>{if(control)await send([0x08,0x01],'Остановить тренировку');finishRecord();started=false;strokePower=[];lastPower=null;$('pace').textContent='—:—';$('speed').textContent='— км/ч';$('watts').textContent='0 Вт'};
 $('heart').onclick=async()=>{try{const dev=await navigator.bluetooth.requestDevice({filters:[{services:[0x180d]}]});await attachHeart(dev)}catch(e){status('Polar: '+errDetail(e))}};
 
-let workoutPlan={mode:'free',target:0,completed:false};
+
 function planModeChanged(){const mode=$('workoutMode').value;const row=$('workoutTargetRow');row.style.display=(mode==='free'||mode==='intervals')?'none':'';$('intervalSettings').style.display=mode==='intervals'?'':'none';const label={distance:'Дистанция, м',time:'Время, мин',heart:'Целевой пульс, уд/мин'}[mode];if(label){$('workoutTargetLabel').firstChild.textContent=label+' ';$('workoutTarget').value=mode==='distance'?2000:mode==='time'?12:140;$('workoutTarget').min=mode==='heart'?70:1}}
 $('workoutMode').onchange=planModeChanged;planModeChanged();
 $('applyWorkout').onclick=()=>{const mode=$('workoutMode').value;const target=Number($('workoutTarget').value);if(!['free','distance','time','heart','intervals'].includes(mode))return;if(!['free','intervals'].includes(mode)&&(!Number.isFinite(target)||target<=0)){status('Укажи корректную цель');return}if(mode==='heart'&&(target<70||target>220)){status('Пульс должен быть от 70 до 220');return}workoutPlan={mode,target,completed:false};if(mode!=='intervals'){$('reset').click()}$('workoutPlanStatus').textContent=mode==='free'?'Свободная гребля':mode==='distance'?'Цель '+target+' м':mode==='time'?'Цель '+target+' мин':mode==='heart'?'Пульс '+target+' уд/мин':'Интервалы: задай параметры ниже';status('План выбран');renderDistanceProgress()};

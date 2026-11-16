@@ -38,21 +38,18 @@ function finishRecord(){closeRest();if(!sessionRecord){trainingArmed=false;train
 
 
 
-let heartRetryTimer=null,heartConnecting=false,heartLastUpdate=0,heartGeneration=0;
+let heartRetryTimer=null,heartConnecting=false,heartLastUpdate=0,heartGeneration=0,heartStallLogged=false;
+function logHeartStallOnce(){if(!heartStallLogged){heartStallLogged=true;log('Polar: данные перестали поступать, автоматический разрыв соединения отключён')}}
 function heartDisconnected(){
   heartGeneration++;heartLastUpdate=0;
   $('bpm').textContent='—';$('hrState').textContent='♥ связь потеряна';
   latest.heart=null;
-  log('Polar: Bluetooth отключён');
-  scheduleHeartReconnect();
+  log('Polar: Bluetooth отключён; автоматические попытки приостановлены, чтобы Android не запрашивал сопряжение повторно');
 }
 function scheduleHeartReconnect(){
-  if(!heartDevice||heartRetryTimer||heartConnecting||document.visibilityState==='hidden')return;
-  heartRetryTimer=setTimeout(async()=>{
-    heartRetryTimer=null;
-    if(!heartDevice||heartDevice.gatt.connected||heartConnecting)return;
-    try{await attachHeart(heartDevice)}catch(e){log('Polar: повторное соединение: '+errDetail(e));$('hrState').textContent='♥ переподключение';scheduleHeartReconnect()}
-  },3500);
+  // Android может показывать системные запросы сопряжения при повторных GATT connect.
+  // Переподключение Polar только по явному нажатию пользователем.
+  $('hrState').textContent='♥ нет связи · подключи в настройках';
 }
 async function attachHeart(dev){
   if(heartConnecting)return;
@@ -69,7 +66,7 @@ async function attachHeart(dev){
     ch.addEventListener('characteristicvaluechanged',e=>{
       if(generation!==heartGeneration)return;
       const d=e.target.value,hr=d.getUint8(0)&1?d.getUint16(1,true):d.getUint8(1);
-      heartLastUpdate=Date.now();
+      heartLastUpdate=Date.now();heartStallLogged=false;
       $('bpm').textContent=hr;recordTrend('heart',hr);$('hrState').textContent='♥ '+hr;
       if(sessionRecord&&hr>0)sessionRecord.heart.push(hr)
     });
@@ -84,18 +81,13 @@ async function attachHeart(dev){
 }
 setInterval(()=>{
   if(!heartDevice)return;
-  if(!heartDevice.gatt.connected){if(!heartConnecting)scheduleHeartReconnect();return}
+  if(!heartDevice.gatt.connected){return}
   if(heartLastUpdate&&Date.now()-heartLastUpdate>12000){
     $('bpm').textContent='—';$('hrState').textContent='♥ нет новых данных';latest.heart=null;
-    if(Date.now()-heartLastUpdate>22000&&!heartConnecting){
-      log('Polar: данные не приходят, переподключаю');
-      heartLastUpdate=Date.now();
-      try{heartDevice.gatt.disconnect()}catch(e){log('Polar: '+errDetail(e))}
-      scheduleHeartReconnect()
-    }
+    if(Date.now()-heartLastUpdate>22000)logHeartStallOnce()
   }
 },3000);
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&heartDevice&&!heartDevice.gatt.connected)scheduleHeartReconnect()});
+// Не переподключать Bluetooth автоматически при возврате вкладки.
 async function restoreDevices(){if(!navigator.bluetooth||typeof navigator.bluetooth.getDevices!=='function'){log('Автоподключение: браузер не поддерживает getDevices; требуется ручной выбор');return}try{const devices=await navigator.bluetooth.getDevices();for(const dev of devices){try{if(dev.name&&/FIT-6993/i.test(dev.name)){log('Автоподключение FIT-6993');await connectRow(dev)}else if(dev.name&&/Polar/i.test(dev.name)){log('Автоподключение Polar');await attachHeart(dev)}}catch(e){log('Автоподключение '+dev.name+': '+errDetail(e))}}}catch(e){log('Автоподключение: '+errDetail(e))}}
 
 function fmt(t){if(!Number.isFinite(t)||t<=0)return '—:—';const n=Math.round(t);return Math.floor(n/60)+':'+String(n%60).padStart(2,'0')}
@@ -201,7 +193,7 @@ async function startWorkout(){if(sessionRecord)return;trainingArmed=true;trainin
 function shortUuid(u){const x=String(u).toLowerCase();const m=x.match(/^0000([0-9a-f]{4})-0000-1000-8000-00805f9b34fb$/);return m?m[1].toUpperCase():/^[0-9a-f]{4}$/.test(x)?x.toUpperCase():x.toUpperCase()}
 function errDetail(e){try{if(e===undefined)return 'Неизвестная ошибка (undefined)';if(e===null)return 'Неизвестная ошибка (null)';let parts=[];if(e.name)parts.push(String(e.name));if(e.message)parts.push(String(e.message));if(e.code!==undefined)parts.push('код='+e.code);if(parts.length)return parts.join(': ');if(typeof e==='string')return e;return JSON.stringify(e)||String(e)}catch(_){return String(e)}}
 $('connect').onclick=async()=>{if(!navigator.bluetooth){status('Web Bluetooth недоступен в этом браузере');return}try{status('Выбери FIT-6993');const dev=await navigator.bluetooth.requestDevice({filters:[{namePrefix:'FIT-'},{services:[0x1826]}],optionalServices:[0x1826,0xF100,0xAE00,0x180D]});await connectRow(dev)}catch(e){status('Подключение: '+errDetail(e))}};
-async function connectRow(dev){let stage='GATT соединение';try{rowDevice=dev;log('УСТРОЙСТВО: '+(dev.name||dev.id||'без имени'));dev.addEventListener('gattserverdisconnected',()=>{status('Гребля отключена');rowConnected(false);$('start').disabled=true;$('stop').disabled=true;control=null});stage='GATT соединение';log('ЭТАП: '+stage);server=await dev.gatt.connect();status('Подключено: '+(dev.name||dev.id));rowConnected(true);let rowingSubscribed=false;for(const n of [0x1826,0xF100,0xAE00,0x180d]){try{stage='сервис '+n.toString(16);log('ЭТАП: '+stage);const svc=await server.getPrimaryService(n);stage='характеристики '+n.toString(16);for(const ch of await svc.getCharacteristics()){const code=shortUuid(ch.uuid),label=n.toString(16).toUpperCase()+'/'+code;log('НАЙДЕН '+label+' notify='+ch.properties.notify+' indicate='+ch.properties.indicate+' write='+ch.properties.write);if(n===0x1826&&code==='2AD9')control=ch;if(ch.properties.notify||ch.properties.indicate){const ok=await watch(ch,label,code==='2AD1'?data:code==='2AD9'?controlResponse:null);if(code==='2AD1'&&ok)rowingSubscribed=true}if(ch.properties.read&&['2ACC','2AD3'].includes(code)){try{log('READ '+label+' '+hx(await ch.readValue()))}catch(e){log('READ '+label+' ошибка '+errDetail(e))}}}}catch(e){log('Сервис '+n.toString(16)+' ошибка: '+errDetail(e))}}$('start').disabled=!rowingSubscribed;$('stop').disabled=false;if(!rowingSubscribed)status('FIT-6993 соединён, но поток данных не подключён — смотри диагностику');else status('FIT-6993: данные гребли подключены');log('FTMS управление: '+(control?'найдено':'отсутствует'));$('start').textContent='Начать тренировку'}catch(e){const detail=errDetail(e);status('Ошибка на этапе «'+stage+'»: '+detail);log('ОШИБКА: '+stage+'; '+detail)}}
+async function connectRow(dev){let stage='GATT соединение';try{rowDevice=dev;log('УСТРОЙСТВО: '+(dev.name||dev.id||'без имени'));dev.addEventListener('gattserverdisconnected',()=>{status('Гребля отключена');rowConnected(false);$('start').disabled=true;$('stop').disabled=true;control=null});stage='GATT соединение';log('ЭТАП: '+stage);server=await dev.gatt.connect();status('Подключено: '+(dev.name||dev.id));rowConnected(true);let rowingSubscribed=false;for(const n of [0x1826,0xF100,0xAE00]){try{stage='сервис '+n.toString(16);log('ЭТАП: '+stage);const svc=await server.getPrimaryService(n);stage='характеристики '+n.toString(16);for(const ch of await svc.getCharacteristics()){const code=shortUuid(ch.uuid),label=n.toString(16).toUpperCase()+'/'+code;log('НАЙДЕН '+label+' notify='+ch.properties.notify+' indicate='+ch.properties.indicate+' write='+ch.properties.write);if(n===0x1826&&code==='2AD9')control=ch;if(ch.properties.notify||ch.properties.indicate){const ok=await watch(ch,label,code==='2AD1'?data:code==='2AD9'?controlResponse:null);if(code==='2AD1'&&ok)rowingSubscribed=true}if(ch.properties.read&&['2ACC','2AD3'].includes(code)){try{log('READ '+label+' '+hx(await ch.readValue()))}catch(e){log('READ '+label+' ошибка '+errDetail(e))}}}}catch(e){log('Сервис '+n.toString(16)+' ошибка: '+errDetail(e))}}$('start').disabled=!rowingSubscribed;$('stop').disabled=false;if(!rowingSubscribed)status('FIT-6993 соединён, но поток данных не подключён — смотри диагностику');else status('FIT-6993: данные гребли подключены');log('FTMS управление: '+(control?'найдено':'отсутствует'));$('start').textContent='Начать тренировку'}catch(e){const detail=errDetail(e);status('Ошибка на этапе «'+stage+'»: '+detail);log('ОШИБКА: '+stage+'; '+detail)}}
 
 
 function safeText(n){return Number.isFinite(n)?Math.round(n).toLocaleString('ru-RU'):'—'}

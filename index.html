@@ -44,6 +44,7 @@ function heartDisconnected(){
   heartGeneration++;heartLastUpdate=0;
   $('bpm').textContent='—';$('hrState').textContent='♥ связь потеряна';
   latest.heart=null;
+  status('Polar H10 отключён · Bluetooth-соединение потеряно');
   log('Polar: Bluetooth отключён; автоматические попытки приостановлены, чтобы Android не запрашивал сопряжение повторно');
 }
 function scheduleHeartReconnect(){
@@ -68,12 +69,14 @@ async function attachHeart(dev){
       if(generation!==heartGeneration)return;
       const d=e.target.value,hr=d.getUint8(0)&1?d.getUint16(1,true):d.getUint8(1);
       heartLastUpdate=Date.now();heartStallLogged=false;
+      if($('status').textContent==='Ожидание подключения'||$('status').textContent.startsWith('Polar H10 подключён'))$('status').textContent='Polar H10 · пульс '+hr;
       $('bpm').textContent=hr;recordTrend('heart',hr);$('hrState').textContent='♥ '+hr;
       if(sessionRecord&&hr>0)sessionRecord.heart.push(hr)
     });
-    await ch.startNotifications();
     $('bpm').textContent='—';$('hrState').textContent='♥ ожидаю пульс';
     heartLastUpdate=Date.now();
+    await ch.startNotifications();
+    if(heartDevice===dev&&dev.gatt.connected)status('Polar H10 подключён · ожидаю пульс');
     log('Пульсометр подключён: '+(dev.name||dev.id));
   }catch(e){
     $('bpm').textContent='—';$('hrState').textContent='♥ нет связи';latest.heart=null;

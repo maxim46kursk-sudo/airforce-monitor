@@ -38,7 +38,64 @@ function finishRecord(){closeRest();if(!sessionRecord){trainingArmed=false;train
 
 
 
-function attachHeart(dev){return (async()=>{heartDevice=dev;const gs=dev.gatt.connected?dev.gatt:await dev.gatt.connect();const svc=await gs.getPrimaryService(0x180d);const ch=await svc.getCharacteristic(0x2a37);await ch.startNotifications();ch.addEventListener('characteristicvaluechanged',e=>{const d=e.target.value;const hr=d.getUint8(0)&1?d.getUint16(1,true):d.getUint8(1);$('bpm').textContent=hr;recordTrend('heart',hr);$('hrState').textContent='♥ '+hr;if(sessionRecord&&hr>0)sessionRecord.heart.push(hr)});$('hrState').textContent='♥ подключён';log('Пульсометр подключён: '+(dev.name||dev.id))})()}
+let heartRetryTimer=null,heartConnecting=false,heartLastUpdate=0,heartGeneration=0;
+function heartDisconnected(){
+  heartGeneration++;heartLastUpdate=0;
+  $('bpm').textContent='—';$('hrState').textContent='♥ связь потеряна';
+  latest.heart=null;
+  log('Polar: Bluetooth отключён');
+  scheduleHeartReconnect();
+}
+function scheduleHeartReconnect(){
+  if(!heartDevice||heartRetryTimer||heartConnecting||document.visibilityState==='hidden')return;
+  heartRetryTimer=setTimeout(async()=>{
+    heartRetryTimer=null;
+    if(!heartDevice||heartDevice.gatt.connected||heartConnecting)return;
+    try{await attachHeart(heartDevice)}catch(e){log('Polar: повторное соединение: '+errDetail(e));$('hrState').textContent='♥ переподключение';scheduleHeartReconnect()}
+  },3500);
+}
+async function attachHeart(dev){
+  if(heartConnecting)return;
+  heartConnecting=true;
+  if(heartRetryTimer){clearTimeout(heartRetryTimer);heartRetryTimer=null}
+  const generation=++heartGeneration;
+  try{
+    if(heartDevice&&heartDevice!==dev){heartLastUpdate=0}
+    heartDevice=dev;
+    if(!dev._airforceHeartDisconnectListener){dev.addEventListener('gattserverdisconnected',()=>{if(heartDevice===dev)heartDisconnected()});dev._airforceHeartDisconnectListener=true}
+    const gs=dev.gatt.connected?dev.gatt:await dev.gatt.connect();
+    const svc=await gs.getPrimaryService(0x180d);
+    const ch=await svc.getCharacteristic(0x2a37);
+    ch.addEventListener('characteristicvaluechanged',e=>{
+      if(generation!==heartGeneration)return;
+      const d=e.target.value,hr=d.getUint8(0)&1?d.getUint16(1,true):d.getUint8(1);
+      heartLastUpdate=Date.now();
+      $('bpm').textContent=hr;recordTrend('heart',hr);$('hrState').textContent='♥ '+hr;
+      if(sessionRecord&&hr>0)sessionRecord.heart.push(hr)
+    });
+    await ch.startNotifications();
+    $('bpm').textContent='—';$('hrState').textContent='♥ ожидаю пульс';
+    heartLastUpdate=Date.now();
+    log('Пульсометр подключён: '+(dev.name||dev.id));
+  }catch(e){
+    $('bpm').textContent='—';$('hrState').textContent='♥ нет связи';latest.heart=null;
+    throw e
+  }finally{heartConnecting=false}
+}
+setInterval(()=>{
+  if(!heartDevice)return;
+  if(!heartDevice.gatt.connected){if(!heartConnecting)scheduleHeartReconnect();return}
+  if(heartLastUpdate&&Date.now()-heartLastUpdate>12000){
+    $('bpm').textContent='—';$('hrState').textContent='♥ нет новых данных';latest.heart=null;
+    if(Date.now()-heartLastUpdate>22000&&!heartConnecting){
+      log('Polar: данные не приходят, переподключаю');
+      heartLastUpdate=Date.now();
+      try{heartDevice.gatt.disconnect()}catch(e){log('Polar: '+errDetail(e))}
+      scheduleHeartReconnect()
+    }
+  }
+},3000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&heartDevice&&!heartDevice.gatt.connected)scheduleHeartReconnect()});
 async function restoreDevices(){if(!navigator.bluetooth||typeof navigator.bluetooth.getDevices!=='function'){log('Автоподключение: браузер не поддерживает getDevices; требуется ручной выбор');return}try{const devices=await navigator.bluetooth.getDevices();for(const dev of devices){try{if(dev.name&&/FIT-6993/i.test(dev.name)){log('Автоподключение FIT-6993');await connectRow(dev)}else if(dev.name&&/Polar/i.test(dev.name)){log('Автоподключение Polar');await attachHeart(dev)}}catch(e){log('Автоподключение '+dev.name+': '+errDetail(e))}}}catch(e){log('Автоподключение: '+errDetail(e))}}
 
 function fmt(t){if(!Number.isFinite(t)||t<=0)return '—:—';const n=Math.round(t);return Math.floor(n/60)+':'+String(n%60).padStart(2,'0')}
